@@ -7,22 +7,48 @@
 
 from socket import socket, AF_INET, SOCK_STREAM
 from threading import Thread
-from random import randint
+import random
 import cryptocode
 
 def HandleRequest(mClientSocket, mClientAddr):
     while True:
-
-        print('Esperando o próximo pacote ...')
-
         data = mClientSocket.recv(2048)
+        mesangemOi = data.decode()
+        print(f'vc recebeu um {mesangemOi} do cliente')
 
+        chavesPublicasString = "23, 9"
+        clientSocket.send(chavesPublicasString.encode()) 
+        
+        chavesPublicas = [23, 9]
+        commonPaint = chavesPublicas[0]
+        base = chavesPublicas[1] 
+        bColor = random.randint(2, 64)
+        bcMix = int(pow(base,bColor,commonPaint))  
+        bcMix = str(bcMix)
+        #transporta o mix
+        mClientSocket.send(bcMix.encode()) 
+        #recebe o mix
+        acMix = mClientSocket.recv(2048)
+        acMix = int(acMix.decode())
+        commonSecretB = int(pow(acMix,bColor,commonPaint))
+
+        chave = commonSecretB
+
+        print(f'chave: {chave}')
+
+
+        mensangemRecebida = mClientSocket.recv(2048)
         print(f'Requisição recebida de {mClientAddr}')
-        req = data.decode()
-        print(f'A requisição foi:{req}')
+        req = mensangemRecebida.decode()
+        msgDescriptografada = cryptocode.decrypt(req, str(chave))
+        print(f'Sua mensagem descriptografada: {msgDescriptografada}')
 
-        rep = 'Hey cliente!'
-        mClientSocket.send(rep.encode())
+        rep = "resposta do servidor aaaaaa"
+        msgCriptografada = cryptocode.encrypt(rep, str(chave))
+        print(f'Sua mensagem criptografada: {msgCriptografada}')
+        mensagem = msgCriptografada
+        mClientSocket.send(mensagem.encode())
+
 
 
 mSocketServer = socket(AF_INET, SOCK_STREAM)
@@ -32,45 +58,19 @@ mSocketServer.bind(('127.0.0.1',1235))
 
 mSocketServer.listen()
 
-#clientes = []
 #dic = {}
 
 while True:
-    
-    mClientSocket, mClientAddr =  mSocketServer.accept()
-    print(f'O servidor aceitou a conexão do Cliente: {mClientAddr}')
+    clientSocket, clientAddr =  mSocketServer.accept()
+    print(f'O servidor aceitou a conexão do Cliente: {clientAddr}')
+    Thread(target=HandleRequest, args=(clientSocket, clientAddr)).start()
 
-    chavesPublicas = [23, 9]
-    #chaveCriada = diffiehelman(chavesPublicas)
-    #msgCriptografada = f"{chaveCriada}"
 
-    commonPaint = chavesPublicas[0]
-    base = chavesPublicas[1]   
-    bColor = 3
-    bcMix = int(pow(base,bColor,commonPaint))  
-    #transporta o mix
-    mClientSocket.send(bcMix.encode()) 
-    #recebe o mix
-    acMix = mClientSocket.recv(2048)
-    acMix = acMix.decode()
-    commonSecretB = int(pow(acMix,bColor,commonPaint))
 
-    chave = commonSecretB
-    mensagem = "Esta eh a minha mensagem! :)"
 
-    msgCriptografada = cryptocode.encrypt(mensagem, chave)
-    print("Sua mensagem criptografada: " + msgCriptografada)
 
-    msgDescriptografada = cryptocode.decrypt(msgCriptografada, chave)
-    print("Sua mensagem descriptografada: " + msgDescriptografada)
 
-    mClientSocket.send(msgCriptografada.encode())
 
-    #dic[chaveCriada] = clientAddr
 
-    #clients.append(client)
-
-    thread = threading.Thread(target=HandleRequest, args=[mClientSocket, mClientAddr])
-    thread.start()
 
    
