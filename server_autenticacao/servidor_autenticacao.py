@@ -9,15 +9,29 @@ from socket import socket, AF_INET, SOCK_STREAM
 from threading import Thread
 import random
 import cryptocode
+import uuid
 
-def HandleRequest(mClientSocket, mClientAddr):
+def HandleRequest(mClientSocket, mClientAddr, dic):
     while True:
-        data = mClientSocket.recv(2048)
-        mesangemOi = data.decode()
-        print(f'vc recebeu um {mesangemOi} do cliente')
 
+        data = mClientSocket.recv(2048)
+        identificadorBase = data.decode()
+
+        if identificadorBase == "comunica":
+            identificadorCliente = uuid.uuid4()
+            identificadorCliente = str(identificadorCliente)
+            print(f'O servidor aceitou a conexão do cliente com o identificador: {identificadorCliente}')
+            dic[identificadorCliente] = mClientAddr
+            mClientSocket.send(identificadorCliente.encode()) 
+            resposta = mClientSocket.recv(2048)
+        else:
+            identificadorCliente = identificadorBase
+            #identificadorCliente = identificadorCliente.decode()
+            #if dic[identificadorCliente] is not None:
+            print("deu certo porra")
+        
         chavesPublicasString = "23, 9"
-        clientSocket.send(chavesPublicasString.encode()) 
+        mClientSocket.send(chavesPublicasString.encode()) 
         
         chavesPublicas = [23, 9]
         commonPaint = chavesPublicas[0]
@@ -34,17 +48,13 @@ def HandleRequest(mClientSocket, mClientAddr):
 
         chave = commonSecretB
 
-        print(f'chave: {chave}')
-
-
         mensangemRecebida = mClientSocket.recv(2048)
         print(f'Requisição recebida de {mClientAddr}')
         req = mensangemRecebida.decode()
         msgDescriptografada = cryptocode.decrypt(req, str(chave))
         print(f'Sua mensagem descriptografada: {msgDescriptografada}')
 
-        rep = "resposta do servidor aaaaaa"
-        msgCriptografada = cryptocode.encrypt(rep, str(chave))
+        msgCriptografada = cryptocode.encrypt("Mensagem recebido com sucesso.", str(chave))
         print(f'Sua mensagem criptografada: {msgCriptografada}')
         mensagem = msgCriptografada
         mClientSocket.send(mensagem.encode())
@@ -58,12 +68,12 @@ mSocketServer.bind(('127.0.0.1',1235))
 
 mSocketServer.listen()
 
-#dic = {}
+dic = {}
 
 while True:
     clientSocket, clientAddr =  mSocketServer.accept()
-    print(f'O servidor aceitou a conexão do Cliente: {clientAddr}')
-    Thread(target=HandleRequest, args=(clientSocket, clientAddr)).start()
+    
+    Thread(target=HandleRequest, args=(clientSocket, clientAddr, dic)).start()
 
 
 

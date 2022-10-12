@@ -5,19 +5,29 @@
 ##base postada no classroom
 ##mudanca: diffiehellmann
 
-
-
-
 from socket import socket, AF_INET, SOCK_STREAM
 import cryptocode
 import random
 
 mClientSocket = socket(AF_INET, SOCK_STREAM)
 mClientSocket.connect(('localhost', 1235))
+identificador = "0"
 
 while True:
     mensagem = input("Digite>>")
-    mClientSocket.send(mensagem.encode())
+    #mClientSocket.send("comunica".encode())
+
+    if identificador == "0":
+        print("nao tem identificador")
+        mClientSocket.send("comunica".encode())
+        identificador = mClientSocket.recv(2048)
+        identificador = identificador.decode()
+        print(f"recebeu identificador {identificador}")
+        mClientSocket.send("identificador recebido".encode())
+    else:
+        print("tem identificador, mandou")
+        mClientSocket.send(identificador.encode())
+        
 
     chavesPublicasString = mClientSocket.recv(2048)
     chavesPublicasString = chavesPublicasString.decode()
@@ -35,9 +45,6 @@ while True:
     mClientSocket.send(acMix.encode()) 
     commonSecretA = int(pow(bcMix,aColor,commonPaint))
     chave = commonSecretA
-
-    print(f'chave: {chave}')
-    
     
     msgCriptografada = cryptocode.encrypt(mensagem, str(chave))
     print(f'Sua mensagem criptografada: {msgCriptografada}')
