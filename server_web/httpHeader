@@ -1,0 +1,17 @@
+Comando Ubuntu:
+    # Note: Só funcionará se houver algum servidor http instalado na máquina
+    # Exemplo: o Apache;
+    telnet localhost 80
+        >>GET / HTTP/1.1
+        >>Host: localhost
+        >><Press Enter>
+
+HTTP/1.1 200 OK
+Date: Tue, 09 Aug 2022 13:23:35 GMT
+Server: Apache/2.4.41 (Ubuntu)
+Last-Modified: Tue, 09 Aug 2022 12:41:42 GMT
+ETag: "2aa6-5e5ce4121f762"
+Accept-Ranges: bytes
+Content-Length: 10918
+Vary: Accept-Encoding
+Content-Type: text/html
