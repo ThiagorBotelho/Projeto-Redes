@@ -1,9 +1,6 @@
 ##base postada no classroom
-##base postada no classroom
-##base postada no classroom
-##base postada no classroom
-##base postada no classroom
 ##mudanca: diffiehellmann
+#identificadores adicionados
 
 from socket import socket, AF_INET, SOCK_STREAM
 import cryptocode
@@ -15,20 +12,18 @@ identificador = "0"
 
 while True:
     mensagem = input("Digite>>")
-    #mClientSocket.send("comunica".encode())
 
     if identificador == "0":
-        print("nao tem identificador")
+        print("O cliente não possui identificador.")
         mClientSocket.send("comunica".encode())
         identificador = mClientSocket.recv(2048)
         identificador = identificador.decode()
-        print(f"recebeu identificador {identificador}")
-        mClientSocket.send("identificador recebido".encode())
+        print(f"Identificador recebido: {identificador}")
+        mClientSocket.send("Identificador recebido.".encode())
     else:
-        print("tem identificador, mandou")
+        print(f"Identificador do cliente: {identificador}")
         mClientSocket.send(identificador.encode())
         
-
     chavesPublicasString = mClientSocket.recv(2048)
     chavesPublicasString = chavesPublicasString.decode()
     chavesPublicas = chavesPublicasString.split(',')
@@ -47,14 +42,12 @@ while True:
     chave = commonSecretA
     
     msgCriptografada = cryptocode.encrypt(mensagem, str(chave))
-    print(f'Sua mensagem criptografada: {msgCriptografada}')
-    mensagem = msgCriptografada
-    mClientSocket.send(mensagem.encode())
+    mClientSocket.send(msgCriptografada.encode())
 
 
     data = mClientSocket.recv(2048)
     reply = data.decode()
     msgDescriptografada = cryptocode.decrypt(reply, str(chave))
-    print(f'Sua mensagem descriptografada: {msgDescriptografada}')
+    print(f'Resposta do servidor: {msgDescriptografada}')
 
 
