@@ -28,8 +28,8 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
             mClientSocket.send(chavesPublicasString.encode()) 
 
             chavesPublicas = chavesPublicasString.split(',')
-            commonPaint = chavesPublicas[0]
-            base = chavesPublicas[1] 
+            commonPaint = int(chavesPublicas[0])
+            base = int(chavesPublicas[1])
             # chave privada do servidor... nao vai guardar isso, vai guardar so o commonsecret
             bColor = random.randint(2, 64)
             bcMix = int(pow(base,bColor,commonPaint))  
