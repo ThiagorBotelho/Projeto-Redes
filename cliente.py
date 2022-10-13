@@ -9,6 +9,7 @@ import random
 mClientSocket = socket(AF_INET, SOCK_STREAM)
 mClientSocket.connect(('localhost', 1235))
 identificador = "0"
+chave = -1
 
 while True:
     mensagem = input("Digite>>")
@@ -20,27 +21,29 @@ while True:
         identificador = identificador.decode()
         print(f"Identificador recebido: {identificador}")
         mClientSocket.send("Identificador recebido.".encode())
+
+        chavesPublicasString = mClientSocket.recv(2048)
+        chavesPublicasString = chavesPublicasString.decode()
+        chavesPublicas = chavesPublicasString.split(',')
+
+        commonPaint = int(chavesPublicas[0])
+        base = int(chavesPublicas[1])
+        aColor = random.randint(2, 64)
+        acMix = int(pow(base,aColor,commonPaint))  
+        acMix = str(acMix)
+        #recebe o mix
+        bcMix = mClientSocket.recv(2048)
+        bcMix = int(bcMix.decode())
+        #transporta o mix
+        mClientSocket.send(acMix.encode()) 
+        commonSecretA = int(pow(bcMix,aColor,commonPaint))
+
+        chave = commonSecretA
+
     else:
         print(f"Identificador do cliente: {identificador}")
         mClientSocket.send(identificador.encode())
-        
-    chavesPublicasString = mClientSocket.recv(2048)
-    chavesPublicasString = chavesPublicasString.decode()
-    chavesPublicas = chavesPublicasString.split(',')
 
-    commonPaint = int(chavesPublicas[0])
-    base = int(chavesPublicas[1])
-    aColor = random.randint(2, 64)
-    acMix = int(pow(base,aColor,commonPaint))  
-    acMix = str(acMix)
-    #recebe o mix
-    bcMix = mClientSocket.recv(2048)
-    bcMix = int(bcMix.decode())
-    #transporta o mix
-    mClientSocket.send(acMix.encode()) 
-    commonSecretA = int(pow(bcMix,aColor,commonPaint))
-    chave = commonSecretA
-    
     msgCriptografada = cryptocode.encrypt(mensagem, str(chave))
     mClientSocket.send(msgCriptografada.encode())
 

@@ -18,31 +18,34 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
             identificadorCliente = uuid.uuid4()
             identificadorCliente = str(identificadorCliente)
             print(f'Conexão do cliente com o identificador {identificadorCliente}.')
-            dic[identificadorCliente] = mClientAddr
+            #dic[identificadorCliente] = mClientAddr
             mClientSocket.send(identificadorCliente.encode()) 
             resposta = mClientSocket.recv(2048)
+
+            chavesPublicasString = "23, 9"
+            mClientSocket.send(chavesPublicasString.encode()) 
+            
+            chavesPublicas = [23, 9]
+            commonPaint = chavesPublicas[0]
+            base = chavesPublicas[1] 
+            bColor = random.randint(2, 64)
+            bcMix = int(pow(base,bColor,commonPaint))  
+            bcMix = str(bcMix)
+            #transporta o mix
+            mClientSocket.send(bcMix.encode()) 
+            #recebe o mix
+            acMix = mClientSocket.recv(2048)
+            acMix = int(acMix.decode())
+            commonSecretB = int(pow(acMix,bColor,commonPaint))
+
+            dic[identificadorCliente] = commonSecretB
+            chave = dic[identificadorCliente]
+
         else:
             identificadorCliente = identificadorBase
             if dic[identificadorCliente] is not None:
                 print(f'Conexão do cliente já conhecido com o identificador {identificadorCliente}.')
-        
-        chavesPublicasString = "23, 9"
-        mClientSocket.send(chavesPublicasString.encode()) 
-        
-        chavesPublicas = [23, 9]
-        commonPaint = chavesPublicas[0]
-        base = chavesPublicas[1] 
-        bColor = random.randint(2, 64)
-        bcMix = int(pow(base,bColor,commonPaint))  
-        bcMix = str(bcMix)
-        #transporta o mix
-        mClientSocket.send(bcMix.encode()) 
-        #recebe o mix
-        acMix = mClientSocket.recv(2048)
-        acMix = int(acMix.decode())
-        commonSecretB = int(pow(acMix,bColor,commonPaint))
-
-        chave = commonSecretB
+                chave = dic[identificadorCliente]
 
         mensangemRecebida = mClientSocket.recv(2048)
         req = mensangemRecebida.decode()
@@ -51,6 +54,7 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
 
         msgCriptografada = cryptocode.encrypt("Mensagem recebida com sucesso.", str(chave))
         mClientSocket.send(msgCriptografada.encode())
+
 
 
 
@@ -66,6 +70,7 @@ dic = {}
 while True:
     clientSocket, clientAddr =  mSocketServer.accept()
     Thread(target=HandleRequest, args=(clientSocket, clientAddr, dic)).start()
+
 
 
 
