@@ -13,7 +13,7 @@ chave = -1
 
 while True:
     # digita a mensagem que será enviada posteriormente
-    mensagem = input("Digite>>")
+    mensagem = str(input("Digite>>"))
 
     if identificador == "0":
         # se o cliente nao tiver um identificador oferecido pelo servidor
@@ -60,9 +60,33 @@ while True:
     mClientSocket.send(msgCriptografada.encode())
 
     # recebendo resposta do servidor
-    data = mClientSocket.recv(2048)
-    reply = data.decode()
-    msgDescriptografada = cryptocode.decrypt(reply, str(chave))
-    print(f'Resposta do servidor: {msgDescriptografada}')
+
+    with open(mensagem, 'wb') as file: #abrir arquivo
+        while 1:
+            print("0")
+            data = mClientSocket.recv(1000000)
+            print(data)
+            # reply = data.decode()
+            #msgDescriptografada = cryptocode.decrypt(data, chave)
+            #print(f'Resposta do servidor: {msgDescriptografada}')
+            if not data:
+                break
+            #dado = msgDescriptografada.encode()
+            file.write(data)
+    
+    print(f'{mensagem} recebido!\n')
 
 
+'''
+namefile = str(input("Arquivo> "))
+
+mClientSocket.send(namefile.encode())
+
+with open(namefile, 'wb') as file: #abrir arquivo
+    while True:
+        data = mClientSocket.recv(1000000) #receber arquivos grandes
+        if not data:
+            break
+        file.write(data)
+        
+print(f" {namefile} recebido!\n")'''

@@ -60,21 +60,26 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
         print(f'Mensagem recebida: {msgDescriptografada}')
 
         # respondendo
-        msgCriptografada = cryptocode.encrypt("Mensagem recebida com sucesso.", str(chave))
-        mClientSocket.send(msgCriptografada.encode())
+        with open(msgDescriptografada, 'rb') as file: #abrir arquivo
+            for data in file.readlines():
+                print("for")
+                #msgCriptografada = cryptocode.encrypt(data, chave)
+                mClientSocket.send(data)
+            print("Arquivo enviado!")
+
 
 
 mSocketServer = socket(AF_INET, SOCK_STREAM)
 print(f'Socket criado ...')
 mSocketServer.bind(('127.0.0.1',1235))
-mSocketServer.listen()
+mSocketServer.listen(1)
 
 dic = {}
 
 while True:
     clientSocket, clientAddr =  mSocketServer.accept()
     Thread(target=HandleRequest, args=(clientSocket, clientAddr, dic)).start()
-
+    mSocketServer.close()
 
 
 
