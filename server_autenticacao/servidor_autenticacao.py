@@ -88,9 +88,9 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
 
                 with open(msgDescriptografada, 'rb') as file:
                     for data in file.readlines():
-                        msgCriptografada = cryptocode.encrypt(str(data), str(chave))
+                        dado = data.decode()
+                        msgCriptografada = cryptocode.encrypt(dado, str(chave))
                         mClientSocket.send(msgCriptografada.encode())
-                        # mClientSocket.send(data)
                     print('Arquivo enviado!')
                     break
 
