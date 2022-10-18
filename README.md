@@ -1,5 +1,8 @@
 # Projeto-Redes
 
+python .\cliente2.py
+python .\servidor2.py
+
 _Referências:_
 
 # Sockets
