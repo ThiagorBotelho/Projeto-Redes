@@ -7,6 +7,8 @@ from threading import Thread
 import random
 import cryptocode
 import uuid
+import os
+from cryptography.fernet import Fernet
 
 def HandleRequest(mClientSocket, mClientAddr, dic):
     while True:
@@ -20,22 +22,22 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
             identificadorCliente = str(identificadorCliente)
             print(f'Conexão do cliente com o identificador {identificadorCliente}.')
             # criou o identificador e mandou
-            mClientSocket.send(identificadorCliente.encode()) 
+            mClientSocket.send(identificadorCliente.encode())
             resposta = mClientSocket.recv(2048) # confirmacao de q o cliente recebeu o id
 
             # inicio de DH. servidor manda as chaves publicas pro cliente
             chavesPublicasString = "23, 9"
-            mClientSocket.send(chavesPublicasString.encode()) 
+            mClientSocket.send(chavesPublicasString.encode())
 
             chavesPublicas = chavesPublicasString.split(',')
             commonPaint = int(chavesPublicas[0])
             base = int(chavesPublicas[1])
             # chave privada do servidor... nao vai guardar isso, vai guardar so o commonsecret
             bColor = random.randint(2, 64)
-            bcMix = int(pow(base,bColor,commonPaint))  
+            bcMix = int(pow(base,bColor,commonPaint))
             bcMix = str(bcMix)
             #transporta o mix
-            mClientSocket.send(bcMix.encode()) 
+            mClientSocket.send(bcMix.encode())
             #recebe o mix
             acMix = mClientSocket.recv(2048)
             acMix = int(acMix.decode())
@@ -59,9 +61,91 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
         msgDescriptografada = cryptocode.decrypt(req, str(chave))
         print(f'Mensagem recebida: {msgDescriptografada}')
 
-        # respondendo
-        msgCriptografada = cryptocode.encrypt("Mensagem recebida com sucesso.", str(chave))
-        mClientSocket.send(msgCriptografada.encode())
+        # RESPONDENDO
+        # msgCriptografada = cryptocode.encrypt("Mensagem recebida com sucesso.", str(chave))
+        # mClientSocket.send(msgCriptografada.encode())
+
+        # Tratamento de sintaxe
+        sintaxe = msgDescriptografada.split(".")
+        tipos_de_arquivo = ['html', 'htm', 'css', 'js', 'png', 'jpg', 'svg', 'pdf', 'jpeg', 'mp4', 'doc', 'zip', 'txt']
+
+        # Verifica como o cliente escreveu o nome do arquivo
+        if '.' not in msgDescriptografada or sintaxe[1] not in tipos_de_arquivo:
+            print('ERRO 400 Bad Request: Mensagem de requisição não entendida pelo servidor.')
+            msgError = 'ERRO 400 Bad Request: Mensagem de requisição não entendida pelo servidor.'
+            data = msgError.encode()
+            mClientSocket.send(data)
+
+        else:
+            # geração de chave da criptografia (muda sempre)
+            key = Fernet.generate_key()
+
+            # guarda a chave em um arquivo (em bytes)
+            with open('filekey.key', 'wb') as filekey:
+                filekey.write(key)
+
+            # Tratamento de existência de arquivo solicitado
+            caminho = "C:/Users/thiag/PycharmProjects/pythonProject1/servidor/"
+            caminhoTodo = caminho + msgDescriptografada
+
+            if os.path.isfile(caminhoTodo):
+                print('Requisição bem-sucedida, objeto requisitado será enviado.')
+                msgSucess = 'Requisição bem-sucedida, objeto requisitado será enviado.'
+                data = msgSucess.encode()
+                mClientSocket.send(data)
+
+                # abrindo o arquivo que contêm a chave gerada
+                with open('filekey.key', 'rb') as filekey:
+                    key = filekey.read()
+                    # envia a chave gerada da vez ao cliente solicitante, para que ele possa descriptografar o arquivo
+                    # Criptografa a mensagem de envio da chave
+
+                    dado = key.decode()
+                    msgCriptografada = cryptocode.encrypt(dado, str(chave))
+                    mClientSocket.send(msgCriptografada.encode())
+                    # mClientSocket.send(key)
+
+                # usando a chave gerada
+                fernet = Fernet(key)
+
+                # abrindo o arquivo que o cliente solicitou para criptografar
+                with open(msgDescriptografada, 'rb') as file:
+                    original = file.read()
+
+                # criptografar o arquivo
+                encrypted = fernet.encrypt(original)
+
+                # abrir o arquivo no modo de gravação e gravar os dados criptografados
+                # (substituindo os dados do arquivo original)
+                with open(msgDescriptografada, 'wb') as encrypted_file:
+                    encrypted_file.write(encrypted)
+
+                # Envia o arquivo original com os dados criptografados ao cliente
+                with open(msgDescriptografada, 'rb') as file:
+                    for data in file.readlines():
+                        print("-------------------------DADO------------------------------------")
+                        print(data)
+                        mClientSocket.send(data)
+                    print('Arquivo enviado!')
+
+                # DESCRIPTOGRAFAR O ARQUIVO ORIGINAL DENTRO DA PASTA DO SERVIDOR
+                # abrindo o arquivo original que foi criptografado
+                with open(msgDescriptografada, 'rb') as enc_file:
+                    encrypted = enc_file.read()
+
+                # descriptografando o arquivo original
+                decrypted = fernet.decrypt(encrypted)
+
+                # abrindo o arquivo no modo de gravação e gravando os dados descriptografados
+                with open(msgDescriptografada, 'wb') as dec_file:
+                    dec_file.write(decrypted)
+                break
+
+            else:
+                print('ERRO 404 Not Found! Documento requisitado não localizado no servidor.')
+                msgError = 'ERRO 404 Not Found! Documento requisitado não localizado no servidor.'
+                data = msgError.encode()
+                mClientSocket.send(data)
 
 
 mSocketServer = socket(AF_INET, SOCK_STREAM)
@@ -74,14 +158,6 @@ dic = {}
 while True:
     clientSocket, clientAddr =  mSocketServer.accept()
     Thread(target=HandleRequest, args=(clientSocket, clientAddr, dic)).start()
-
-
-
-
-
-
-
-
-
+    mSocketServer.close()
 
    
