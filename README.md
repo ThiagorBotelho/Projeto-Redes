@@ -1,7 +1,7 @@
 # Projeto-Redes
 
-python .\cliente2.py
-python .\servidor2.py
+python .\cliente.py
+python .\servidor.py
 
 _Referências:_
 

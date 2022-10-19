@@ -7,6 +7,7 @@ import cryptocode
 import random
 from cryptography.fernet import Fernet
 
+
 mClientSocket = socket(AF_INET, SOCK_STREAM)
 mClientSocket.connect(('localhost', 1235))
 identificador = "0"
@@ -70,53 +71,59 @@ while True:
 
     if resposta == 'Requisição bem-sucedida, objeto requisitado será enviado.':
         pergunta = 1
-        break
+
+        # Recebendo chave para descriptografar o arquivo.
+        with open('filekey.key', 'wb') as filekey:
+            key = mClientSocket.recv(2048)
+            reply = key.decode()
+            msgDescriptografada = cryptocode.decrypt(reply, str(chave))
+            print(f'Resposta do servidor: {msgDescriptografada}')
+            dataBytes = msgDescriptografada.encode()
+            filekey.write(dataBytes)
+
+        with open(mensagem, 'wb') as file:
+            while 1:
+                # recebendo arquivo do servidor
+                print("Receber arquivo servidor")
+                data = mClientSocket.recv(2048)
+                print(f"Recebido: {data}")
+                fim = data.decode()
+                print("----------------------------------------")
+                print(fim)
+                if fim == 'Arquivo enviado!':
+                    break
+                file.write(data)
+
+        print(f'{mensagem} recebido!\n')
+
+        # abrindo a chave
+        with open('filekey.key', 'rb') as filekey:
+            key = filekey.read()
+
+        # usando a chave
+        fernet = Fernet(key)
+
+        # abrindo o arquivo criptografado
+        with open(mensagem, 'rb') as enc_file:
+            encrypted = enc_file.read()
+
+        # descriptografando o arquivo
+        decrypted = fernet.decrypt(encrypted)
+
+        # abrindo o arquivo no modo de gravação e
+        # gravando os dados descriptografados
+        with open(mensagem, 'wb') as dec_file:
+            dec_file.write(decrypted)
+
+        pergunta = int(input('Digite 1 para fazer outra requisição ou 0 para fechar: '))
+        if pergunta == 0:
+            break
+
 
     else:
         pergunta = int(input('Digite 1 para tentar outra requisição ou 0 para fechar: '))
         if pergunta == 0:
             break
 
-if pergunta != 0:
-
-    # Recebendo chave para descriptografar o arquivo.
-    with open('filekey.key', 'wb') as filekey:
-        key = mClientSocket.recv(2048)
-        reply = key.decode()
-        msgDescriptografada = cryptocode.decrypt(reply, str(chave))
-        print(f'Resposta do servidor: {msgDescriptografada}')
-        dataBytes = msgDescriptografada.encode()
-        filekey.write(dataBytes)
-
-    with open(mensagem, 'wb') as file:
-        while 1:
-            # recebendo arquivo do servidor
-            data = mClientSocket.recv(2048)
-            if not data:
-                break
-            file.write(data)
-
-    print(f'{mensagem} recebido!\n')
-
-    # abrindo a chave
-    with open('filekey.key', 'rb') as filekey:
-        key = filekey.read()
-
-    # usando a chave
-    fernet = Fernet(key)
-
-    # abrindo o arquivo criptografado
-    with open(mensagem, 'rb') as enc_file:
-        encrypted = enc_file.read()
-
-    # descriptografando o arquivo
-    decrypted = fernet.decrypt(encrypted)
-
-    # abrindo o arquivo no modo de gravação e
-    # gravando os dados descriptografados
-    with open(mensagem, 'wb') as dec_file:
-        dec_file.write(decrypted)
-
-else:
-    print("Conexão finalizada!")
-    mClientSocket.close()
+print("Conexão finalizada!")
+mClientSocket.close()

@@ -9,9 +9,12 @@ import cryptocode
 import uuid
 import os
 from cryptography.fernet import Fernet
+import time
+import pathlib
 
 def HandleRequest(mClientSocket, mClientAddr, dic):
     while True:
+        print("AGUARDANDO A CONEXÃO...")
         # recebendo o 'oi' do cliente. o identificador dele ou dizendo q nao tem
         data = mClientSocket.recv(2048)
         identificadorBase = data.decode()
@@ -62,10 +65,8 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
         print(f'Mensagem recebida: {msgDescriptografada}')
 
         # RESPONDENDO
-        # msgCriptografada = cryptocode.encrypt("Mensagem recebida com sucesso.", str(chave))
-        # mClientSocket.send(msgCriptografada.encode())
 
-        # Tratamento de sintaxe
+        # Tratamento de sintaxe do nome do arquivo requerido
         sintaxe = msgDescriptografada.split(".")
         tipos_de_arquivo = ['html', 'htm', 'css', 'js', 'png', 'jpg', 'svg', 'pdf', 'jpeg', 'mp4', 'doc', 'zip', 'txt']
 
@@ -85,7 +86,13 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
                 filekey.write(key)
 
             # Tratamento de existência de arquivo solicitado
-            caminho = "C:/Users/thiag/PycharmProjects/pythonProject1/servidor/"
+            caminho = pathlib.Path().absolute()
+            caminho = str(caminho)
+            caminho2 = caminho.replace("\\", "/")
+            caminho2 = caminho2 + "/"
+            print(caminho2)
+
+            caminho = caminho2
             caminhoTodo = caminho + msgDescriptografada
 
             if os.path.isfile(caminhoTodo):
@@ -97,13 +104,11 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
                 # abrindo o arquivo que contêm a chave gerada
                 with open('filekey.key', 'rb') as filekey:
                     key = filekey.read()
-                    # envia a chave gerada da vez ao cliente solicitante, para que ele possa descriptografar o arquivo
-                    # Criptografa a mensagem de envio da chave
-
+                    # envia a chave gerada da vez ao cliente solicitante, para que ele possa descriptografar o arquivo.
+                    # Criptografa a mensagem de envio da chave.
                     dado = key.decode()
                     msgCriptografada = cryptocode.encrypt(dado, str(chave))
                     mClientSocket.send(msgCriptografada.encode())
-                    # mClientSocket.send(key)
 
                 # usando a chave gerada
                 fernet = Fernet(key)
@@ -123,10 +128,11 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
                 # Envia o arquivo original com os dados criptografados ao cliente
                 with open(msgDescriptografada, 'rb') as file:
                     for data in file.readlines():
-                        print("-------------------------DADO------------------------------------")
-                        print(data)
                         mClientSocket.send(data)
-                    print('Arquivo enviado!')
+                    time.sleep(1)
+                    fim = 'Arquivo enviado!'
+                    fim = fim.encode()
+                    mClientSocket.send(fim)
 
                 # DESCRIPTOGRAFAR O ARQUIVO ORIGINAL DENTRO DA PASTA DO SERVIDOR
                 # abrindo o arquivo original que foi criptografado
@@ -139,7 +145,7 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
                 # abrindo o arquivo no modo de gravação e gravando os dados descriptografados
                 with open(msgDescriptografada, 'wb') as dec_file:
                     dec_file.write(decrypted)
-                break
+                # break
 
             else:
                 print('ERRO 404 Not Found! Documento requisitado não localizado no servidor.')
@@ -158,6 +164,7 @@ dic = {}
 while True:
     clientSocket, clientAddr =  mSocketServer.accept()
     Thread(target=HandleRequest, args=(clientSocket, clientAddr, dic)).start()
-    mSocketServer.close()
+    print("Saiu da função")
+    # mSocketServer.close()
 
    
