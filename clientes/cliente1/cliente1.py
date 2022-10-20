@@ -6,6 +6,7 @@ from socket import socket, AF_INET, SOCK_STREAM
 import cryptocode
 import random
 from cryptography.fernet import Fernet
+import time
 
 
 mClientSocket = socket(AF_INET, SOCK_STREAM)
@@ -15,12 +16,14 @@ chave = -1
 
 while True:
     # digita a mensagem que será enviada posteriormente
-    mensagem = input("Digite>>")
+    # TIRAR DAQUI PARA SALVAR O NOME DO CLIENTE.
+    nome_cliente = input("Digite o nome do cliente1>>")
+    mensagem = input("Digite o arquivo requisitado>>")
 
     if identificador == "0":
-        # se o cliente nao tiver um identificador oferecido pelo servidor
+        # se o cliente1 nao tiver um identificador oferecido pelo servidor
 
-        print("O cliente não possui identificador.")
+        print("O cliente1 não possui identificador.")
         # envia uma mensagem padrao, basicamente dizendo "nao tenho identificador"
         envio = "comunica"
         enviofinal = envio.encode()
@@ -50,14 +53,21 @@ while True:
         mClientSocket.send(acMix.encode())
         commonSecretA = int(pow(bcMix,aColor,commonPaint))
 
-        # chave do DH definida pro cliente. o msm processo aconteceu no servidor e ele guardou essa chave com o identificador
+        # chave do DH definida pro cliente1. o msm processo aconteceu no servidor e ele guardou essa chave com o identificador
         chave = commonSecretA
 
     else:
-        # o cliente já tem identificador pq se comunicou antes com o servidor
-        print(f"Identificador do cliente: {identificador}")
+        # o cliente1 já tem identificador pq se comunicou antes com o servidor
+        print(f"Identificador do cliente1: {identificador}")
         # envia o identificador pro servidor saber quem ele é e usar a chave DH certa pra comunicação
         mClientSocket.send(identificador.encode())
+
+    # criptografando o nome que foi digitado no inicio e enviando
+    nome_cliente_cripto = cryptocode.encrypt(nome_cliente, str(chave))
+    mClientSocket.send(nome_cliente_cripto.encode())
+
+    # Para dar tempo de o cliente1 mandar a 1 mensagem e depois a próxima sem misturar o envio.
+    time.sleep(1)
 
     # criptografando a mensagem que foi digitada no inicio e enviando
     msgCriptografada = cryptocode.encrypt(mensagem, str(chave))
@@ -69,7 +79,7 @@ while True:
     print('CÓDIGO DE RESPOSTA ABAIXO:')
     print(resposta)
 
-    if resposta == 'Requisição bem-sucedida, objeto requisitado será enviado.':
+    if resposta[220:277] == 'Requisição bem-sucedida, objeto requisitado será enviado!':
         pergunta = 1
 
         # Recebendo chave para descriptografar o arquivo.
@@ -84,12 +94,9 @@ while True:
         with open(mensagem, 'wb') as file:
             while 1:
                 # recebendo arquivo do servidor
-                print("Receber arquivo servidor")
                 data = mClientSocket.recv(2048)
-                print(f"Recebido: {data}")
+                # print(f"Recebido: {data}")
                 fim = data.decode()
-                print("----------------------------------------")
-                print(fim)
                 if fim == 'Arquivo enviado!':
                     break
                 file.write(data)

@@ -11,24 +11,25 @@ import os
 from cryptography.fernet import Fernet
 import time
 import pathlib
+import servidor.htmlMessage as htmlMessage
 
 def HandleRequest(mClientSocket, mClientAddr, dic):
     while True:
         print("AGUARDANDO A CONEXÃO...")
-        # recebendo o 'oi' do cliente. o identificador dele ou dizendo q nao tem
+        # recebendo o 'oi' do cliente1. o identificador dele ou dizendo q nao tem
         data = mClientSocket.recv(2048)
         identificadorBase = data.decode()
 
         if identificadorBase == "comunica":
-            # se o cliente nao tem identificador
+            # se o cliente1 nao tem identificador
             identificadorCliente = uuid.uuid4()
             identificadorCliente = str(identificadorCliente)
             print(f'Conexão do cliente com o identificador {identificadorCliente}.')
             # criou o identificador e mandou
             mClientSocket.send(identificadorCliente.encode())
-            resposta = mClientSocket.recv(2048) # confirmacao de q o cliente recebeu o id
+            resposta = mClientSocket.recv(2048) # confirmacao de q o cliente1 recebeu o id
 
-            # inicio de DH. servidor manda as chaves publicas pro cliente
+            # inicio de DH. servidor manda as chaves publicas pro cliente1
             chavesPublicasString = "23, 9"
             mClientSocket.send(chavesPublicasString.encode())
 
@@ -39,118 +40,196 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
             bColor = random.randint(2, 64)
             bcMix = int(pow(base,bColor,commonPaint))
             bcMix = str(bcMix)
-            #transporta o mix
+            # transporta o mix
             mClientSocket.send(bcMix.encode())
-            #recebe o mix
+            # recebe o mix
             acMix = mClientSocket.recv(2048)
             acMix = int(acMix.decode())
             commonSecretB = int(pow(acMix,bColor,commonPaint))
 
-            # guardando o identificador do cliente e o commonsecret entre eles q possibilita o DH
+            # guardando o identificador do cliente1 e o commonsecret entre eles q possibilita o DH
             dic[identificadorCliente] = commonSecretB
             chave = dic[identificadorCliente]
 
         else:
-            # se o cliente tinha identificador, foi isso que ele mandou
+            # se o cliente1 tinha identificador, foi isso que ele mandou
             identificadorCliente = identificadorBase
             if dic[identificadorCliente] is not None:
                 print(f'Conexão do cliente já conhecido com o identificador {identificadorCliente}.')
-                # servidor entende quem é o cliente e pega a chave DH referente a ele
+                # servidor entende quem é o cliente1 e pega a chave DH referente a ele
                 chave = dic[identificadorCliente]
 
-        # comunicacao da parte de realmente receber a mensagem
-        mensangemRecebida = mClientSocket.recv(2048)
-        req = mensangemRecebida.decode()
-        msgDescriptografada = cryptocode.decrypt(req, str(chave))
-        print(f'Mensagem recebida: {msgDescriptografada}')
+        # Receber o nome do cliente1
+        mensagem_recebida1 = mClientSocket.recv(2048)
+        nome_cliente_cripto = mensagem_recebida1.decode()
+        nome_cliente = cryptocode.decrypt(nome_cliente_cripto, str(chave))
+        nome_cliente = nome_cliente.lower().strip()
+        print(f'Nome do cliente: {nome_cliente}')
+
+        # Receber a mensagem (nome do arquivo)
+        mensagem_recebida2 = mClientSocket.recv(2048)
+        req = mensagem_recebida2.decode()
+        nome_arquivo = cryptocode.decrypt(req, str(chave))
+        print(f'Mensagem recebida: {nome_arquivo}')
 
         # RESPONDENDO
 
         # Tratamento de sintaxe do nome do arquivo requerido
-        sintaxe = msgDescriptografada.split(".")
+        sintaxe = nome_arquivo.split(".")
         tipos_de_arquivo = ['html', 'htm', 'css', 'js', 'png', 'jpg', 'svg', 'pdf', 'jpeg', 'mp4', 'doc', 'zip', 'txt']
 
-        # Verifica como o cliente escreveu o nome do arquivo
-        if '.' not in msgDescriptografada or sintaxe[1] not in tipos_de_arquivo:
-            print('ERRO 400 Bad Request: Mensagem de requisição não entendida pelo servidor.')
-            msgError = 'ERRO 400 Bad Request: Mensagem de requisição não entendida pelo servidor.'
-            data = msgError.encode()
+        # Verifica como o cliente1 escreveu o nome do arquivo
+        if '.' not in nome_arquivo or sintaxe[1] not in tipos_de_arquivo:
+            # ENVIO DO HTML ERRO BAD REQUEST AO CLIENTE - ERRO DE SINTAXE
+            msg_erro_html = htmlMessage.BadRequest()
+            data = msg_erro_html.encode()
             mClientSocket.send(data)
 
         else:
-            # geração de chave da criptografia (muda sempre)
-            key = Fernet.generate_key()
-
-            # guarda a chave em um arquivo (em bytes)
-            with open('filekey.key', 'wb') as filekey:
-                filekey.write(key)
-
             # Tratamento de existência de arquivo solicitado
             caminho = pathlib.Path().absolute()
-            caminho = str(caminho)
-            caminho2 = caminho.replace("\\", "/")
-            caminho2 = caminho2 + "/"
-            print(caminho2)
+            caminho = str(caminho).replace("\\", "/")
+            caminho_completo = caminho + "/" + nome_arquivo
 
-            caminho = caminho2
-            caminhoTodo = caminho + msgDescriptografada
+            if os.path.isfile(caminho_completo):
 
-            if os.path.isfile(caminhoTodo):
-                print('Requisição bem-sucedida, objeto requisitado será enviado.')
-                msgSucess = 'Requisição bem-sucedida, objeto requisitado será enviado.'
-                data = msgSucess.encode()
-                mClientSocket.send(data)
+                # Controle de acesso para o arquivo teste.txt
+                lista_arquivos_permissao = ['teste.txt']
+                lista_de_acesso_permitido = ['maria', 'marcos']
 
-                # abrindo o arquivo que contêm a chave gerada
-                with open('filekey.key', 'rb') as filekey:
-                    key = filekey.read()
-                    # envia a chave gerada da vez ao cliente solicitante, para que ele possa descriptografar o arquivo.
-                    # Criptografa a mensagem de envio da chave.
-                    dado = key.decode()
-                    msgCriptografada = cryptocode.encrypt(dado, str(chave))
-                    mClientSocket.send(msgCriptografada.encode())
+                if nome_arquivo in lista_arquivos_permissao:
+                    # Como o arquivo requisitado ta dentro da lista de arquivos que requerem permissão, verifica agora
+                    # se o cliente1 tem a permissão para acessar.
+                    if nome_cliente in lista_de_acesso_permitido:
 
-                # usando a chave gerada
-                fernet = Fernet(key)
-
-                # abrindo o arquivo que o cliente solicitou para criptografar
-                with open(msgDescriptografada, 'rb') as file:
-                    original = file.read()
-
-                # criptografar o arquivo
-                encrypted = fernet.encrypt(original)
-
-                # abrir o arquivo no modo de gravação e gravar os dados criptografados
-                # (substituindo os dados do arquivo original)
-                with open(msgDescriptografada, 'wb') as encrypted_file:
-                    encrypted_file.write(encrypted)
-
-                # Envia o arquivo original com os dados criptografados ao cliente
-                with open(msgDescriptografada, 'rb') as file:
-                    for data in file.readlines():
+                        # ENVIO DO HTML SUCESSO AO CLIENTE
+                        msg_sucesso_html = htmlMessage.sucesso()
+                        data = msg_sucesso_html.encode()
                         mClientSocket.send(data)
-                    time.sleep(1)
-                    fim = 'Arquivo enviado!'
-                    fim = fim.encode()
-                    mClientSocket.send(fim)
 
-                # DESCRIPTOGRAFAR O ARQUIVO ORIGINAL DENTRO DA PASTA DO SERVIDOR
-                # abrindo o arquivo original que foi criptografado
-                with open(msgDescriptografada, 'rb') as enc_file:
-                    encrypted = enc_file.read()
+                        # geração de chave da criptografia (muda sempre)
+                        key = Fernet.generate_key()
 
-                # descriptografando o arquivo original
-                decrypted = fernet.decrypt(encrypted)
+                        # guarda a chave em um arquivo (em bytes)
+                        with open('filekey.key', 'wb') as filekey:
+                            filekey.write(key)
 
-                # abrindo o arquivo no modo de gravação e gravando os dados descriptografados
-                with open(msgDescriptografada, 'wb') as dec_file:
-                    dec_file.write(decrypted)
-                # break
+                        # abrindo o arquivo que contêm a chave gerada
+                        with open('filekey.key', 'rb') as filekey:
+                            key = filekey.read()
+                            # envia a chave gerada da vez ao cliente1 solicitante, para que ele possa descriptografar o arquivo.
+                            # Criptografa a mensagem de envio da chave.
+                            dado = key.decode()
+                            msgCriptografada = cryptocode.encrypt(dado, str(chave))
+                            mClientSocket.send(msgCriptografada.encode())
+
+                        # usando a chave gerada
+                        fernet = Fernet(key)
+
+                        # abrindo o arquivo que o cliente1 solicitou para criptografar
+                        with open(nome_arquivo, 'rb') as file:
+                            original = file.read()
+
+                        # criptografar o arquivo
+                        encrypted = fernet.encrypt(original)
+
+                        # abrir o arquivo no modo de gravação e gravar os dados criptografados
+                        # (substituindo os dados do arquivo original)
+                        with open(nome_arquivo, 'wb') as encrypted_file:
+                            encrypted_file.write(encrypted)
+
+                        # Envia o arquivo original com os dados criptografados ao cliente1
+                        with open(nome_arquivo, 'rb') as file:
+                            for data in file.readlines():
+                                mClientSocket.send(data)
+                            # Para dar tempo de o servidor mandar a 1 mensagem e depois a próxima sem misturar o envio.
+                            time.sleep(1)
+                            fim = 'Arquivo enviado!'
+                            fim = fim.encode()
+                            mClientSocket.send(fim)
+
+                        # DESCRIPTOGRAFAR O ARQUIVO ORIGINAL DENTRO DA PASTA DO SERVIDOR
+                        # abrindo o arquivo original que foi criptografado
+                        with open(nome_arquivo, 'rb') as enc_file:
+                            encrypted = enc_file.read()
+
+                        # descriptografando o arquivo original
+                        decrypted = fernet.decrypt(encrypted)
+
+                        # abrindo o arquivo no modo de gravação e gravando os dados descriptografados
+                        with open(nome_arquivo, 'wb') as dec_file:
+                            dec_file.write(decrypted)
+
+                    else:
+                        # ENVIO DO HTML ERRO 403 Forbidden AO CLIENTE - NÃO AUTORIZADO
+                        msg_erro_html = htmlMessage.NaoAutorizado()
+                        data = msg_erro_html.encode()
+                        mClientSocket.send(data)
+
+                else:
+                    # ENVIO DO HTML SUCESSO AO CLIENTE
+                    msg_sucesso_html = htmlMessage.sucesso()
+                    data = msg_sucesso_html.encode()
+                    mClientSocket.send(data)
+
+                    # geração de chave da criptografia (muda sempre)
+                    key = Fernet.generate_key()
+
+                    # guarda a chave em um arquivo (em bytes)
+                    with open('filekey.key', 'wb') as filekey:
+                        filekey.write(key)
+
+                    # abrindo o arquivo que contêm a chave gerada
+                    with open('filekey.key', 'rb') as filekey:
+                        key = filekey.read()
+                        # envia a chave gerada da vez ao cliente1 solicitante, para que ele possa descriptografar o arquivo.
+                        # Criptografa a mensagem de envio da chave.
+                        dado = key.decode()
+                        msgCriptografada = cryptocode.encrypt(dado, str(chave))
+                        mClientSocket.send(msgCriptografada.encode())
+
+                    # usando a chave gerada
+                    fernet = Fernet(key)
+
+                    # abrindo o arquivo que o cliente1 solicitou para criptografar
+                    with open(nome_arquivo, 'rb') as file:
+                        original = file.read()
+
+                    # criptografar o arquivo
+                    encrypted = fernet.encrypt(original)
+
+                    # abrir o arquivo no modo de gravação e gravar os dados criptografados
+                    # (substituindo os dados do arquivo original)
+                    with open(nome_arquivo, 'wb') as encrypted_file:
+                        encrypted_file.write(encrypted)
+
+                    # Envia o arquivo original com os dados criptografados ao cliente1
+                    with open(nome_arquivo, 'rb') as file:
+                        for data in file.readlines():
+                            mClientSocket.send(data)
+                        # Para dar tempo de o servidor mandar a 1 mensagem e depois a próxima sem misturar o envio.
+                        time.sleep(1)
+                        fim = 'Arquivo enviado!'
+                        print(fim)
+                        fim = fim.encode()
+                        mClientSocket.send(fim)
+
+                    # DESCRIPTOGRAFAR O ARQUIVO ORIGINAL DENTRO DA PASTA DO SERVIDOR
+                    # abrindo o arquivo original que foi criptografado
+                    with open(nome_arquivo, 'rb') as enc_file:
+                        encrypted = enc_file.read()
+
+                    # descriptografando o arquivo original
+                    decrypted = fernet.decrypt(encrypted)
+
+                    # abrindo o arquivo no modo de gravação e gravando os dados descriptografados
+                    with open(nome_arquivo, 'wb') as dec_file:
+                        dec_file.write(decrypted)
 
             else:
-                print('ERRO 404 Not Found! Documento requisitado não localizado no servidor.')
-                msgError = 'ERRO 404 Not Found! Documento requisitado não localizado no servidor.'
-                data = msgError.encode()
+                # ENVIO DO HTML ERRO 404 Not Found AO CLIENTE - NÃO ENCONTRADO
+                msg_erro_html = htmlMessage.NaoEncontrado()
+                data = msg_erro_html.encode()
                 mClientSocket.send(data)
 
 

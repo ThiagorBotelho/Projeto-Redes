@@ -1,23 +1,18 @@
-##base postada no classroom
-##base postada no classroom
-##base postada no classroom
-##base postada no classroom
-##base postada no classroom
-##base postada no classroom
-
-from email.utils import formatdate
 from datetime import datetime
-from time import mktime
+from pytz import timezone
 
-def successFul():
 
+def sucesso():
     now = datetime.now()
-    mStamp = mktime(now.timetuple())
+    # Fuso horario para ser independente do computador
+    fuso_horario = timezone('America/Sao_Paulo')
+    now_brasil = now.astimezone(fuso_horario)
+    data_texto = now_brasil.strftime('%A, %d %B %Y, %H:%M:%S')
 
     #header
     resposta = ''
     resposta += 'HTTP/1.1 200 OK\r\n'
-    resposta += f'Date: {formatdate(timeval=mStamp, localtime=False, usegmt=True)}\r\n'
+    resposta += f'Date: {data_texto}\r\n'
     resposta += 'Server: CIn UFPE/0.0.0.1 (Ubuntu)\r\n'
     # resposta += f'Content-Length: '
     resposta += 'Content-Type: text/html\r\n'
@@ -31,22 +26,24 @@ def successFul():
     html += '<meta charset="UTF-8">'
     html += '</head>'
     html += '<body>'
-    html += '<h1>Hello World</h1>'
-    html += '<h2>Hello World</h2>'
-    html += '<h3>Hello World</h3>'
+    html += '<h1>Requisição bem-sucedida, objeto requisitado será enviado!</h1>'
+    html += '<h3>Parabéns!!</h3>'
     html += '</body>'
     html += '</html>'
 
     resposta += html
     return resposta
 
-def notFound():
+def NaoEncontrado():
     now = datetime.now()
-    mStamp = mktime(now.timetuple())
+    # Fuso horario para ser independente do computador
+    fuso_horario = timezone('America/Sao_Paulo')
+    now_brasil = now.astimezone(fuso_horario)
+    data_texto = now_brasil.strftime('%A, %d %B %Y, %H:%M:%S')
 
     resposta = ''
     resposta += 'HTTP/1.1 404 Not Found\r\n'
-    resposta += f'Date: {formatdate(timeval=mStamp, localtime=False, usegmt=True)}\r\n'
+    resposta += f'Date: {data_texto}\r\n'
     resposta += 'Server: CIn UFPE/0.0.0.1 (Ubuntu)\r\n'
     # resposta += f'Content-Length: '
     resposta += 'Content-Type: text/html\r\n'
@@ -66,48 +63,20 @@ def notFound():
     resposta += html
     return resposta
 
-
-def badReq():
+def NaoAutorizado():
     now = datetime.now()
-    mStamp = mktime(now.timetuple())
+    # Fuso horario para ser independente do computador
+    fuso_horario = timezone('America/Sao_Paulo')
+    now_brasil = now.astimezone(fuso_horario)
+    data_texto = now_brasil.strftime('%A, %d %B %Y, %H:%M:%S')
 
     resposta = ''
-    resposta += 'HTTP/1.1 400 Bad Request\r\n'
-    resposta += f'Date: {formatdate(timeval=mStamp, localtime=False, usegmt=True)}\r\n'
+    resposta += 'HTTP/1.1 403 Forbidden:\r\n'
+    resposta += f'Date: {data_texto}\r\n'
     resposta += 'Server: CIn UFPE/0.0.0.1 (Ubuntu)\r\n'
     # resposta += f'Content-Length: '
     resposta += 'Content-Type: text/html\r\n'
     resposta += '\r\n'
-
-# Aqui a gnt bota o codigo html das respostas
-
-    html = ''
-    html += '<html>'
-    html += '<head>'
-    html += '<title>Bad Request - CIn/UFPE</title>'
-    html += '<meta charset="UTF-8">'
-    html += '</head>'
-    html += '<body>'
-    html += '<h1>Essa requisição não foi encontrada no servidor</h1>'
-    html += '</body>'
-    html += '</html>'
-
-    resposta += html
-    return resposta
-
-def forbidDen():
-    now = datetime.now()
-    mStamp = mktime(now.timetuple())
-
-    resposta = ''
-    resposta += 'HTTP/1.1 403 Forbidden\r\n'
-    resposta += f'Date: {formatdate(timeval=mStamp, localtime=False, usegmt=True)}\r\n'
-    resposta += 'Server: CIn UFPE/0.0.0.1 (Ubuntu)\r\n'
-    # resposta += f'Content-Length: '
-    resposta += 'Content-Type: text/html\r\n'
-    resposta += '\r\n'
-
-# Aqui a gnt bota o codigo html das respostas
 
     html = ''
     html += '<html>'
@@ -116,9 +85,38 @@ def forbidDen():
     html += '<meta charset="UTF-8">'
     html += '</head>'
     html += '<body>'
-    html += '<h1>Essa requisição não foi encontrada no servidor</h1>'
+    html += '<h1>O cliente1 não tem direitos de acesso ao conteúdo requisitado!</h1>'
     html += '</body>'
     html += '</html>'
+
+    resposta += html
+    return resposta
+
+def BadRequest():
+    now = datetime.now()
+    # Fuso horario para ser independente do computador
+    fuso_horario = timezone('America/Sao_Paulo')
+    now_brasil = now.astimezone(fuso_horario)
+    data_texto = now_brasil.strftime('%A, %d %B %Y, %H:%M:%S')
+
+    resposta = ''
+    resposta += 'HTTP/1.1 400 Bad Request\r\n'
+    resposta += f'Date: {data_texto}\r\n'
+    resposta += 'Server: CIn UFPE/0.0.0.1 (Ubuntu)\r\n'
+    # resposta += f'Content-Length: '
+    resposta += 'Content-Type: text/html\r\n'
+    resposta += '\r\n'
+
+    html = ''
+    html += '<html>\r\n'
+    html += '   <head>\r\n'
+    html += '       <title>Bad Request - CIn/UFPE</title>\r\n'
+    html += '       <meta charset="UTF-8">\r\n'
+    html += '   </head>\r\n'
+    html += '   <body>\r\n'
+    html += '       <h1>Mensagem de requisição não entendida pelo servidor!</h1>\r\n'
+    html += '   </body>\r\n'
+    html += '</html>\r\n'
 
     resposta += html
     return resposta
