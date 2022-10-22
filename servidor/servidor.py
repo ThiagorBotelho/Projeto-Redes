@@ -11,7 +11,7 @@ import os
 from cryptography.fernet import Fernet
 import time
 import pathlib
-import servidor.htmlMessage as htmlMessage
+import htmlMessage
 
 def HandleRequest(mClientSocket, mClientAddr, dic):
     while True:
@@ -59,7 +59,29 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
                 # servidor entende quem é o cliente1 e pega a chave DH referente a ele
                 chave = dic[identificadorCliente]
 
-        # Receber o nome do cliente1
+        # Pega o caminho do arquivo servidor.py no computador em que o servidor está rodando.
+        caminho = pathlib.Path().absolute()
+        caminho = str(caminho).replace("\\", "/")
+
+        # Lista de arquivos para ignorar e não enviar aos clientes
+        lista_ignora = ['servidor.py', 'htmlMessage.py', 'htmlMessage.cpython-310.pyc']
+
+        # Percorre a pasta do servidor para coletar os arquivos que estão nessa pasta.
+        # Envia lista de arquivos disponíveis para o cliente
+        for diretorio, subpastas, arquivos in os.walk(caminho):
+            for arquivo in arquivos:
+                print(arquivo)
+                if arquivo not in lista_ignora:
+                    # Criptografa a mensagem de envio.
+                    msgCriptografada = cryptocode.encrypt(arquivo, str(chave))
+                    mClientSocket.send(msgCriptografada.encode())
+                else:
+                    pass
+        time.sleep(0.5)
+        msgCriptografada = cryptocode.encrypt('Lista enviada!', str(chave))
+        mClientSocket.send(msgCriptografada.encode())
+
+        # Receber o nome do cliente
         mensagem_recebida1 = mClientSocket.recv(2048)
         nome_cliente_cripto = mensagem_recebida1.decode()
         nome_cliente = cryptocode.decrypt(nome_cliente_cripto, str(chave))
@@ -78,11 +100,12 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
         sintaxe = nome_arquivo.split(".")
         tipos_de_arquivo = ['html', 'htm', 'css', 'js', 'png', 'jpg', 'svg', 'pdf', 'jpeg', 'mp4', 'doc', 'zip', 'txt']
 
-        # Verifica como o cliente1 escreveu o nome do arquivo
+        # Verifica como o cliente escreveu o nome do arquivo
         if '.' not in nome_arquivo or sintaxe[1] not in tipos_de_arquivo:
             # ENVIO DO HTML ERRO BAD REQUEST AO CLIENTE - ERRO DE SINTAXE
             msg_erro_html = htmlMessage.BadRequest()
-            data = msg_erro_html.encode()
+            msg_erro_html_cripto = cryptocode.encrypt(msg_erro_html, str(chave))
+            data = msg_erro_html_cripto.encode()
             mClientSocket.send(data)
 
         else:
@@ -104,24 +127,20 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
 
                         # ENVIO DO HTML SUCESSO AO CLIENTE
                         msg_sucesso_html = htmlMessage.sucesso()
-                        data = msg_sucesso_html.encode()
+                        msg_sucesso_html_cripto = cryptocode.encrypt(msg_sucesso_html, str(chave))
+                        data = msg_sucesso_html_cripto.encode()
                         mClientSocket.send(data)
 
-                        # geração de chave da criptografia (muda sempre)
+                        # geração de chave da criptografia (muda a cada envio de arquivo)
                         key = Fernet.generate_key()
+                        print(f"A chave é :{key}")
 
-                        # guarda a chave em um arquivo (em bytes)
-                        with open('filekey.key', 'wb') as filekey:
-                            filekey.write(key)
-
-                        # abrindo o arquivo que contêm a chave gerada
-                        with open('filekey.key', 'rb') as filekey:
-                            key = filekey.read()
-                            # envia a chave gerada da vez ao cliente1 solicitante, para que ele possa descriptografar o arquivo.
-                            # Criptografa a mensagem de envio da chave.
-                            dado = key.decode()
-                            msgCriptografada = cryptocode.encrypt(dado, str(chave))
-                            mClientSocket.send(msgCriptografada.encode())
+                        # transforma em string para conseguir descriptografar
+                        dado = key.decode()
+                        # Criptografa a mensagem de envio da chave.
+                        msgCriptografada = cryptocode.encrypt(dado, str(chave))
+                        # envia a chave gerada ao cliente solicitante, para que ele possa descriptografar o arquivo.
+                        mClientSocket.send(msgCriptografada.encode())
 
                         # usando a chave gerada
                         fernet = Fernet(key)
@@ -143,7 +162,7 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
                             for data in file.readlines():
                                 mClientSocket.send(data)
                             # Para dar tempo de o servidor mandar a 1 mensagem e depois a próxima sem misturar o envio.
-                            time.sleep(1)
+                            time.sleep(0.5)
                             fim = 'Arquivo enviado!'
                             fim = fim.encode()
                             mClientSocket.send(fim)
@@ -163,30 +182,26 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
                     else:
                         # ENVIO DO HTML ERRO 403 Forbidden AO CLIENTE - NÃO AUTORIZADO
                         msg_erro_html = htmlMessage.NaoAutorizado()
-                        data = msg_erro_html.encode()
+                        msg_erro_html_cripto = cryptocode.encrypt(msg_erro_html, str(chave))
+                        data = msg_erro_html_cripto.encode()
                         mClientSocket.send(data)
 
                 else:
                     # ENVIO DO HTML SUCESSO AO CLIENTE
                     msg_sucesso_html = htmlMessage.sucesso()
-                    data = msg_sucesso_html.encode()
+                    msg_sucesso_html_cripto = cryptocode.encrypt(msg_sucesso_html, str(chave))
+                    data = msg_sucesso_html_cripto.encode()
                     mClientSocket.send(data)
 
                     # geração de chave da criptografia (muda sempre)
                     key = Fernet.generate_key()
 
-                    # guarda a chave em um arquivo (em bytes)
-                    with open('filekey.key', 'wb') as filekey:
-                        filekey.write(key)
-
-                    # abrindo o arquivo que contêm a chave gerada
-                    with open('filekey.key', 'rb') as filekey:
-                        key = filekey.read()
-                        # envia a chave gerada da vez ao cliente1 solicitante, para que ele possa descriptografar o arquivo.
-                        # Criptografa a mensagem de envio da chave.
-                        dado = key.decode()
-                        msgCriptografada = cryptocode.encrypt(dado, str(chave))
-                        mClientSocket.send(msgCriptografada.encode())
+                    # transforma em string para conseguir descriptografar
+                    dado = key.decode()
+                    # Criptografa a mensagem de envio da chave.
+                    msgCriptografada = cryptocode.encrypt(dado, str(chave))
+                    # envia a chave gerada ao cliente solicitante, para que ele possa descriptografar o arquivo.
+                    mClientSocket.send(msgCriptografada.encode())
 
                     # usando a chave gerada
                     fernet = Fernet(key)
@@ -208,7 +223,7 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
                         for data in file.readlines():
                             mClientSocket.send(data)
                         # Para dar tempo de o servidor mandar a 1 mensagem e depois a próxima sem misturar o envio.
-                        time.sleep(1)
+                        time.sleep(0.5)
                         fim = 'Arquivo enviado!'
                         print(fim)
                         fim = fim.encode()
@@ -229,7 +244,8 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
             else:
                 # ENVIO DO HTML ERRO 404 Not Found AO CLIENTE - NÃO ENCONTRADO
                 msg_erro_html = htmlMessage.NaoEncontrado()
-                data = msg_erro_html.encode()
+                msg_erro_html_cripto = cryptocode.encrypt(msg_erro_html, str(chave))
+                data = msg_erro_html_cripto.encode()
                 mClientSocket.send(data)
 
 

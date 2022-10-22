@@ -79,7 +79,7 @@ while True:
     print('CÓDIGO DE RESPOSTA ABAIXO:')
     print(resposta)
 
-    if resposta[220:277] == 'Requisição bem-sucedida, objeto requisitado será enviado!':
+    if resposta[237:294] == 'Requisição bem-sucedida, objeto requisitado será enviado!':
         pergunta = 1
 
         # Recebendo chave para descriptografar o arquivo.

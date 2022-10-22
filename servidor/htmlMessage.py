@@ -18,18 +18,17 @@ def sucesso():
     resposta += 'Content-Type: text/html\r\n'
     resposta += '\r\n'
 
-    #mensagem
+    # mensagem
     html = ''
-    html += '<html>'
-    html += '<head>'
-    html += '<title>Redes de Computadores - CIn/UFPE</title>'
-    html += '<meta charset="UTF-8">'
-    html += '</head>'
-    html += '<body>'
-    html += '<h1>Requisição bem-sucedida, objeto requisitado será enviado!</h1>'
-    html += '<h3>Parabéns!!</h3>'
-    html += '</body>'
-    html += '</html>'
+    html += '<html>\r\n'
+    html += '   <head>\r\n'
+    html += '       <title>Sucesso!!</title>\r\n'
+    html += '       <meta charset="UTF-8">\r\n'
+    html += '   </head>\r\n'
+    html += '   <body>\r\n'
+    html += '       <h1>Requisição bem-sucedida, objeto requisitado será enviado!</h1>\r\n'
+    html += '   </body>\r\n'
+    html += '</html>\r\n'
 
     resposta += html
     return resposta
@@ -50,15 +49,15 @@ def NaoEncontrado():
     resposta += '\r\n'
 
     html = ''
-    html += '<html>'
-    html += '<head>'
-    html += '<title>Not Found - CIn/UFPE</title>'
-    html += '<meta charset="UTF-8">'
-    html += '</head>'
-    html += '<body>'
-    html += '<h1>Essa requisição não foi encontrada no servidor</h1>'
-    html += '</body>'
-    html += '</html>'
+    html += '<html>\r\n'
+    html += '   <head>\r\n'
+    html += '       <title>ERROR Not Found</title>\r\n'
+    html += '       <meta charset="UTF-8">\r\n'
+    html += '   </head>\r\n'
+    html += '   <body>\r\n'
+    html += '       <h1>Essa requisição não foi encontrada no servidor</h1>\r\n'
+    html += '   </body>\r\n'
+    html += '</html>\r\n'
 
     resposta += html
     return resposta
@@ -79,15 +78,15 @@ def NaoAutorizado():
     resposta += '\r\n'
 
     html = ''
-    html += '<html>'
-    html += '<head>'
-    html += '<title>Forbidden - CIn/UFPE</title>'
-    html += '<meta charset="UTF-8">'
-    html += '</head>'
-    html += '<body>'
-    html += '<h1>O cliente1 não tem direitos de acesso ao conteúdo requisitado!</h1>'
-    html += '</body>'
-    html += '</html>'
+    html += '<html>\r\n'
+    html += '   <head>\r\n'
+    html += '       <title>ERROR Forbidden</title>\r\n'
+    html += '       <meta charset="UTF-8">\r\n'
+    html += '   </head>\r\n'
+    html += '   <body>\r\n'
+    html += '       <h1>O cliente não tem direitos de acesso ao conteúdo requisitado!</h1>\r\n'
+    html += '   </body>\r\n'
+    html += '</html>\r\n'
 
     resposta += html
     return resposta
@@ -110,7 +109,7 @@ def BadRequest():
     html = ''
     html += '<html>\r\n'
     html += '   <head>\r\n'
-    html += '       <title>Bad Request - CIn/UFPE</title>\r\n'
+    html += '       <title>ERROR Bad Request</title>\r\n'
     html += '       <meta charset="UTF-8">\r\n'
     html += '   </head>\r\n'
     html += '   <body>\r\n'

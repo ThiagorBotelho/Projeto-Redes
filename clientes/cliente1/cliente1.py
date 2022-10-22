@@ -15,10 +15,6 @@ identificador = "0"
 chave = -1
 
 while True:
-    # digita a mensagem que será enviada posteriormente
-    # TIRAR DAQUI PARA SALVAR O NOME DO CLIENTE.
-    nome_cliente = input("Digite o nome do cliente1>>")
-    mensagem = input("Digite o arquivo requisitado>>")
 
     if identificador == "0":
         # se o cliente1 nao tiver um identificador oferecido pelo servidor
@@ -62,34 +58,53 @@ while True:
         # envia o identificador pro servidor saber quem ele é e usar a chave DH certa pra comunicação
         mClientSocket.send(identificador.encode())
 
+    # Recebendo lista de arquivos disponíveis
+    lista_arquivos = []
+    while True:
+        arq = mClientSocket.recv(2048)
+        arquivos = arq.decode()
+        arquivoDescripto = cryptocode.decrypt(arquivos, str(chave))
+        if arquivoDescripto == 'Lista enviada!':
+            break
+        lista_arquivos.append(arquivoDescripto)
+
+    # Digita a mensagem que será enviada posteriormente
+    nome_cliente = input("Digite o nome do cliente>>")
+
+    # Mostrar os arquivos disponíveis ao cliente:
+    print("Arquivos Disponíveis:")
+    for arquivo in lista_arquivos:
+        print(f"-> {arquivo}")
+
+    mensagem = input("Digite o arquivo requisitado>>")
+
     # criptografando o nome que foi digitado no inicio e enviando
     nome_cliente_cripto = cryptocode.encrypt(nome_cliente, str(chave))
     mClientSocket.send(nome_cliente_cripto.encode())
 
-    # Para dar tempo de o cliente1 mandar a 1 mensagem e depois a próxima sem misturar o envio.
-    time.sleep(1)
+    # Para dar tempo de o cliente mandar a primeira mensagem e depois a próxima sem misturar o envio.
+    time.sleep(0.5)
 
     # criptografando a mensagem que foi digitada no inicio e enviando
     msgCriptografada = cryptocode.encrypt(mensagem, str(chave))
     mClientSocket.send(msgCriptografada.encode())
 
-    # recebendo resposta (confirmação) do servidor
+    # recebendo resposta (confirmação) do servidor e descriptografando
     resp = mClientSocket.recv(2048)
     resposta = resp.decode()
-    print('CÓDIGO DE RESPOSTA ABAIXO:')
-    print(resposta)
+    resposta_descripto = cryptocode.decrypt(resposta, str(chave))
+    print('')
+    print(resposta_descripto[:15])
 
-    if resposta[220:277] == 'Requisição bem-sucedida, objeto requisitado será enviado!':
+    if resposta_descripto[:15] == 'HTTP/1.1 200 OK':
         pergunta = 1
 
         # Recebendo chave para descriptografar o arquivo.
-        with open('filekey.key', 'wb') as filekey:
-            key = mClientSocket.recv(2048)
-            reply = key.decode()
-            msgDescriptografada = cryptocode.decrypt(reply, str(chave))
-            print(f'Resposta do servidor: {msgDescriptografada}')
-            dataBytes = msgDescriptografada.encode()
-            filekey.write(dataBytes)
+        key = mClientSocket.recv(2048)
+        reply = key.decode()
+        msgDescriptografada = cryptocode.decrypt(reply, str(chave))
+        print(f'Resposta do servidor: {msgDescriptografada}')
+        KeyBytes = msgDescriptografada.encode()
 
         with open(mensagem, 'wb') as file:
             while 1:
@@ -103,12 +118,8 @@ while True:
 
         print(f'{mensagem} recebido!\n')
 
-        # abrindo a chave
-        with open('filekey.key', 'rb') as filekey:
-            key = filekey.read()
-
-        # usando a chave
-        fernet = Fernet(key)
+        # usando a chave que vai descriptografar o arquivo
+        fernet = Fernet(KeyBytes)
 
         # abrindo o arquivo criptografado
         with open(mensagem, 'rb') as enc_file:
