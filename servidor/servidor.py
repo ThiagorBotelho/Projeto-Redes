@@ -12,6 +12,7 @@ from cryptography.fernet import Fernet
 import time
 import pathlib
 import htmlMessage
+import rsa
 
 def HandleRequest(mClientSocket, mClientAddr, dic):
     while True:
@@ -88,11 +89,26 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
         nome_cliente = nome_cliente.lower().strip()
         print(f'Nome do cliente: {nome_cliente}')
 
+        # Receber a assinatura
+        chavePublica = mClientSocket.recv(2048)
+        chavePublica = chavePublica.decode()
+        chavePublica1 = slice(10,-8)
+        chavePublica2 = slice(-6, -1)
+
+        chavePublica = rsa.PublicKey(int(chavePublica[chavePublica1]), int(chavePublica[chavePublica2]))
+
+        assinatura = mClientSocket.recv(2048)
+        #assinatura = assinatura.decode()
+        #assinatura = cryptocode.decrypt(assinatura, str(chave))
+
         # Receber a mensagem (nome do arquivo)
         mensagem_recebida2 = mClientSocket.recv(2048)
         req = mensagem_recebida2.decode()
         nome_arquivo = cryptocode.decrypt(req, str(chave))
         print(f'Mensagem recebida: {nome_arquivo}')
+
+        nome_arquivo1 = nome_arquivo.encode()
+        rsa.verify(nome_arquivo1, assinatura, chavePublica)
 
         # RESPONDENDO
 
