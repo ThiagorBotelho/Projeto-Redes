@@ -7,6 +7,7 @@ import cryptocode
 import random
 from cryptography.fernet import Fernet
 import time
+import rsa
 
 
 mClientSocket = socket(AF_INET, SOCK_STREAM)
@@ -85,9 +86,18 @@ while True:
     # Para dar tempo de o cliente mandar a primeira mensagem e depois a próxima sem misturar o envio.
     time.sleep(0.5)
 
-    # criptografando a mensagem que foi digitada no inicio e enviando
+   # criptografando a mensagem que foi digitada no inicio e enviando
+    (chavePub, chavePriv) = rsa.newkeys(512)
+    mClientSocket.send(str(chavePub).encode())
+
+    mensagem1 = mensagem.encode()
+    assinatura = rsa.sign(mensagem1, chavePriv, 'SHA-1')
+    #assinatura = cryptocode.encrypt(str(assinatura), str(chave))
+    mClientSocket.send(assinatura)
+    
     msgCriptografada = cryptocode.encrypt(mensagem, str(chave))
     mClientSocket.send(msgCriptografada.encode())
+
 
     # recebendo resposta (confirmação) do servidor e descriptografando
     resp = mClientSocket.recv(2048)
