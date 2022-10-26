@@ -86,25 +86,39 @@ while True:
     # Para dar tempo de o cliente mandar a primeira mensagem e depois a próxima sem misturar o envio.
     time.sleep(0.5)
 
-   # criptografando a mensagem que foi digitada no inicio e enviando
+    # criptografando a mensagem que foi digitada no inicio (nome do arquivo) e enviando.
+    msgCriptografada = cryptocode.encrypt(mensagem, str(chave))
+    mClientSocket.send(msgCriptografada.encode())
+
+    # Assinatura Digital
     (chavePub, chavePriv) = rsa.newkeys(512)
     mClientSocket.send(str(chavePub).encode())
 
     mensagem1 = mensagem.encode()
     assinatura = rsa.sign(mensagem1, chavePriv, 'SHA-1')
-    #assinatura = cryptocode.encrypt(str(assinatura), str(chave))
-    mClientSocket.send(assinatura)
-    
-    msgCriptografada = cryptocode.encrypt(mensagem, str(chave))
-    mClientSocket.send(msgCriptografada.encode())
+    print(f"assinatura: {assinatura}")
+    #print(f"assinatura hex: {assinatura.hex()}")
+    assinatura_encrypt = cryptocode.encrypt(assinatura.hex(), str(chave))
+    mClientSocket.send(assinatura_encrypt.encode())
 
+    time.sleep(0.5)
+    
+    # recebendo resposta (confirmação) da verificação da assinatura
+    resp = mClientSocket.recv(2048)
+    resposta = resp.decode()
+    resp_descripto_assinatura = cryptocode.decrypt(resposta, str(chave))
+    print('')
+    print(f"Respsta da assinatura: {resp_descripto_assinatura}")
+    
+    time.sleep(0.5)
 
     # recebendo resposta (confirmação) do servidor e descriptografando
+    print("Esperando confirmação do erro...")
     resp = mClientSocket.recv(2048)
     resposta = resp.decode()
     resposta_descripto = cryptocode.decrypt(resposta, str(chave))
     print('')
-    print(resposta_descripto[:15])
+    print(resposta_descripto)
 
     if resposta_descripto[:15] == 'HTTP/1.1 200 OK':
         pergunta = 1
@@ -113,7 +127,6 @@ while True:
         key = mClientSocket.recv(2048)
         reply = key.decode()
         msgDescriptografada = cryptocode.decrypt(reply, str(chave))
-        print(f'Resposta do servidor: {msgDescriptografada}')
         KeyBytes = msgDescriptografada.encode()
 
         with open(mensagem, 'wb') as file:
@@ -146,7 +159,6 @@ while True:
         pergunta = int(input('Digite 1 para fazer outra requisição ou 0 para fechar: '))
         if pergunta == 0:
             break
-
 
     else:
         pergunta = int(input('Digite 1 para tentar outra requisição ou 0 para fechar: '))
