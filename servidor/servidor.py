@@ -253,13 +253,10 @@ mSocketServer = socket(AF_INET, SOCK_STREAM)
 print(f'Socket criado ...')
 mSocketServer.bind(('127.0.0.1',1235))
 mSocketServer.listen()
-
 dic = {}
 
 while True:
     clientSocket, clientAddr =  mSocketServer.accept()
     Thread(target=HandleRequest, args=(clientSocket, clientAddr, dic)).start()
     print("Saiu da função")
-    # mSocketServer.close()
-
-   
+    mSocketServer.close()
