@@ -17,20 +17,23 @@ import rsa
 def HandleRequest(mClientSocket, mClientAddr, dic):
     while True:
         print("AGUARDANDO A CONEXÃO...")
-        # recebendo o 'oi' do cliente1. o identificador dele ou dizendo q nao tem
+        # recebendo o 'oi' do cliente. o identificador dele ou dizendo q nao tem
         data = mClientSocket.recv(2048)
         identificadorBase = data.decode()
 
+        if not data:
+            break
+
         if identificadorBase == "comunica":
-            # se o cliente1 nao tem identificador
+            # se o cliente nao tem identificador
             identificadorCliente = uuid.uuid4()
             identificadorCliente = str(identificadorCliente)
             print(f'Conexão do cliente com o identificador {identificadorCliente}.')
             # criou o identificador e mandou
             mClientSocket.send(identificadorCliente.encode())
-            resposta = mClientSocket.recv(2048) # confirmacao de q o cliente1 recebeu o id
+            resposta = mClientSocket.recv(2048) # confirmacao de q o cliente recebeu o id
 
-            # inicio de DH. servidor manda as chaves publicas pro cliente1
+            # inicio de DH. servidor manda as chaves publicas pro cliente
             chavesPublicasString = "23, 9"
             mClientSocket.send(chavesPublicasString.encode())
 
@@ -48,16 +51,16 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
             acMix = int(acMix.decode())
             commonSecretB = int(pow(acMix,bColor,commonPaint))
 
-            # guardando o identificador do cliente1 e o commonsecret entre eles q possibilita o DH
+            # guardando o identificador do cliente e o commonsecret entre eles q possibilita o DH
             dic[identificadorCliente] = commonSecretB
             chave = dic[identificadorCliente]
 
         else:
-            # se o cliente1 tinha identificador, foi isso que ele mandou
+            # se o cliente tinha identificador, foi isso que ele mandou
             identificadorCliente = identificadorBase
-            if dic[identificadorCliente] is not None:
+            if dic[identificadorCliente]:
                 print(f'Conexão do cliente já conhecido com o identificador {identificadorCliente}.')
-                # servidor entende quem é o cliente1 e pega a chave DH referente a ele
+                # servidor entende quem é o cliente e pega a chave DH referente a ele
                 chave = dic[identificadorCliente]
 
         # Pega o caminho do arquivo servidor.py no computador em que o servidor está rodando.
@@ -77,7 +80,9 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
                     mClientSocket.send(msgCriptografada.encode())
                 else:
                     pass
-        time.sleep(0.5)
+
+        time.sleep(0.25)
+
         msgCriptografada = cryptocode.encrypt('Lista enviada!', str(chave))
         mClientSocket.send(msgCriptografada.encode())
 
@@ -94,7 +99,7 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
         nome_arquivo = cryptocode.decrypt(req, str(chave))
         print(f'Mensagem recebida: {nome_arquivo}')
 
-        # Receber a assinatura digital
+        # Receber a chave da assinatura digital
         chavePublica = mClientSocket.recv(2048)
         chavePublica = chavePublica.decode()
         chavePublica1 = slice(10,-8)
@@ -102,29 +107,26 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
 
         chavePublica = rsa.PublicKey(int(chavePublica[chavePublica1]), int(chavePublica[chavePublica2]))
 
+        # Receber a assinatura e verificar se está correta
         assinatura = mClientSocket.recv(2048)
         assinatura = assinatura.decode()
         assinatura = cryptocode.decrypt(assinatura, str(chave))
         assinatura_decrypt = bytes.fromhex(assinatura)
-        print(f"assinatura final: {assinatura_decrypt}")
 
         nome_arquivo_encode = nome_arquivo.encode()
         verifica_assinatura = rsa.verify(nome_arquivo_encode, assinatura_decrypt, chavePublica)
-        print("Verificando...")
         if verifica_assinatura != "SHA-1":
-            confirma_assinatura = 'Erro!'
-            print('Erro!')
+            confirma_assinatura = 'Erro! Assinatura digital não é válida.'
             msgCriptografada = cryptocode.encrypt(confirma_assinatura, str(chave))
             mClientSocket.send(msgCriptografada.encode())
         else:
             confirma_assinatura = 'Verificação da assinatura digital realizada, a mensagem foi assinada!'
-            print('Verificação da assinatura digital realizada, a mensagem foi assinada!')
             msgCriptografada = cryptocode.encrypt(confirma_assinatura, str(chave))
             mClientSocket.send(msgCriptografada.encode())
             
             time.sleep(0.5)
-            # RESPONDENDO
 
+            # RESPONDENDO
             # Tratamento de sintaxe do nome do arquivo requerido
             sintaxe = nome_arquivo.split(".")
             tipos_de_arquivo = ['html', 'htm', 'css', 'js', 'png', 'jpg', 'svg', 'pdf', 'jpeg', 'mp4', 'doc', 'zip', 'txt']
@@ -163,7 +165,6 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
 
                             # geração de chave da criptografia (muda a cada envio de arquivo)
                             key = Fernet.generate_key()
-                            print(f"A chave é :{key}")
 
                             # transforma em string para conseguir descriptografar
                             dado = key.decode()
@@ -290,5 +291,4 @@ dic = {}
 while True:
     clientSocket, clientAddr =  mSocketServer.accept()
     Thread(target=HandleRequest, args=(clientSocket, clientAddr, dic)).start()
-    print("Saiu da função")
-    mSocketServer.close()
+    # mSocketServer.close()

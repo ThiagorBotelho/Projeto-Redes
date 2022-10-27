@@ -14,13 +14,13 @@ mClientSocket = socket(AF_INET, SOCK_STREAM)
 mClientSocket.connect(('localhost', 1235))
 identificador = "0"
 chave = -1
+nome_cliente = "vazio"
 
 while True:
 
     if identificador == "0":
-        # se o cliente1 nao tiver um identificador oferecido pelo servidor
-
-        print("O cliente1 não possui identificador.")
+        # se o cliente nao tiver um identificador oferecido pelo servidor
+        # print("O cliente não possui identificador.")
         # envia uma mensagem padrao, basicamente dizendo "nao tenho identificador"
         envio = "comunica"
         enviofinal = envio.encode()
@@ -28,7 +28,7 @@ while True:
         # recebe o identificador
         identificador = mClientSocket.recv(2048)
         identificador = identificador.decode()
-        print(f"Identificador recebido: {identificador}")
+        # print(f"Identificador recebido: {identificador}")
         # diz que recebeu o identificador
         mClientSocket.send("Identificador recebido.".encode())
 
@@ -50,12 +50,12 @@ while True:
         mClientSocket.send(acMix.encode())
         commonSecretA = int(pow(bcMix,aColor,commonPaint))
 
-        # chave do DH definida pro cliente1. o msm processo aconteceu no servidor e ele guardou essa chave com o identificador
+        # chave do DH definida pro cliente. o msm processo aconteceu no servidor e ele guardou essa chave com o identificador
         chave = commonSecretA
 
     else:
-        # o cliente1 já tem identificador pq se comunicou antes com o servidor
-        print(f"Identificador do cliente1: {identificador}")
+        # o cliente já tem identificador pq se comunicou antes com o servidor
+        # print(f"Identificador do cliente: {identificador}")
         # envia o identificador pro servidor saber quem ele é e usar a chave DH certa pra comunicação
         mClientSocket.send(identificador.encode())
 
@@ -69,15 +69,16 @@ while True:
             break
         lista_arquivos.append(arquivoDescripto)
 
-    # Digita a mensagem que será enviada posteriormente
-    nome_cliente = input("Digite o nome do cliente>>")
+    # Para o cliente digitar o seu nome:
+    if nome_cliente == "vazio":
+        nome_cliente = input("\nDigite o nome do cliente >> ")
 
     # Mostrar os arquivos disponíveis ao cliente:
-    print("Arquivos Disponíveis:")
+    print("\nArquivos Disponíveis no servidor:")
     for arquivo in lista_arquivos:
         print(f"-> {arquivo}")
 
-    mensagem = input("Digite o arquivo requisitado>>")
+    mensagem = input(f"\n{nome_cliente}, digite o nome do arquivo requisitado >> ")
 
     # criptografando o nome que foi digitado no inicio e enviando
     nome_cliente_cripto = cryptocode.encrypt(nome_cliente, str(chave))
@@ -96,8 +97,7 @@ while True:
 
     mensagem1 = mensagem.encode()
     assinatura = rsa.sign(mensagem1, chavePriv, 'SHA-1')
-    print(f"assinatura: {assinatura}")
-    #print(f"assinatura hex: {assinatura.hex()}")
+    # Único método possível para passar de bytes para string sem dar problemas depois.
     assinatura_encrypt = cryptocode.encrypt(assinatura.hex(), str(chave))
     mClientSocket.send(assinatura_encrypt.encode())
 
@@ -107,13 +107,18 @@ while True:
     resp = mClientSocket.recv(2048)
     resposta = resp.decode()
     resp_descripto_assinatura = cryptocode.decrypt(resposta, str(chave))
+    # Caso a integridade da mensagem não se mantenha:
+    if resp_descripto_assinatura == 'Erro! Assinatura digital não é válida.':
+        print(f"{resp_descripto_assinatura} Sua conexão será encerrada")
+        mClientSocket.close()
+        break
+    # Caso esteja tudo certo, continuar o código
     print('')
-    print(f"Respsta da assinatura: {resp_descripto_assinatura}")
+    print(resp_descripto_assinatura)
     
     time.sleep(0.5)
 
     # recebendo resposta (confirmação) do servidor e descriptografando
-    print("Esperando confirmação do erro...")
     resp = mClientSocket.recv(2048)
     resposta = resp.decode()
     resposta_descripto = cryptocode.decrypt(resposta, str(chave))
@@ -132,14 +137,13 @@ while True:
         with open(mensagem, 'wb') as file:
             while 1:
                 # recebendo arquivo do servidor
-                data = mClientSocket.recv(2048)
-                # print(f"Recebido: {data}")
+                data = mClientSocket.recv(1000000)  # Colocando 1000000 para poder receber arquivos grandes
                 fim = data.decode()
                 if fim == 'Arquivo enviado!':
                     break
                 file.write(data)
 
-        print(f'{mensagem} recebido!\n')
+        print(f'Arquivo "{mensagem}" recebido!\n')
 
         # usando a chave que vai descriptografar o arquivo
         fernet = Fernet(KeyBytes)
