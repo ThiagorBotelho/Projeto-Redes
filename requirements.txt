@@ -1,0 +1,4 @@
+cryptocode==0.1
+cryptography==38.0.1
+pytz==2022.2
+rsa==4.9

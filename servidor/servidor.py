@@ -21,6 +21,7 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
         data = mClientSocket.recv(2048)
         identificadorBase = data.decode()
 
+        # Para os casos em que o cliente fechar a conexão e o ciclo não se repetir após ele sair e ocorrer um erro
         if not data:
             break
 
@@ -101,7 +102,8 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
 
         # Receber a chave da assinatura digital
         chavePublica = mClientSocket.recv(2048)
-        chavePublica = chavePublica.decode()
+        chavePublicaStr = chavePublica.decode()
+        chavePublica = cryptocode.decrypt(chavePublicaStr, str(chave))
         chavePublica1 = slice(10,-8)
         chavePublica2 = slice(-6, -1)
 
@@ -148,7 +150,7 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
 
                     # Controle de acesso para o arquivo teste.txt
                     lista_arquivos_permissao = ['teste.txt']
-                    lista_de_acesso_permitido = ['maria', 'marcos']
+                    lista_de_acesso_permitido = ['maria', 'roger']
 
                     if nome_arquivo in lista_arquivos_permissao:
                         # Como o arquivo requisitado ta dentro da lista de arquivos que requerem permissão, verifica agora
@@ -176,7 +178,7 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
                             # usando a chave gerada
                             fernet = Fernet(key)
 
-                            # abrindo o arquivo que o cliente1 solicitou para criptografar
+                            # abrindo o arquivo que o cliente solicitou para criptografar
                             with open(nome_arquivo, 'rb') as file:
                                 original = file.read()
 
@@ -188,7 +190,7 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
                             with open(nome_arquivo, 'wb') as encrypted_file:
                                 encrypted_file.write(encrypted)
 
-                            # Envia o arquivo original com os dados criptografados ao cliente1
+                            # Envia o arquivo original com os dados criptografados ao cliente
                             with open(nome_arquivo, 'rb') as file:
                                 for data in file.readlines():
                                     mClientSocket.send(data)
@@ -201,10 +203,10 @@ def HandleRequest(mClientSocket, mClientAddr, dic):
                             # DESCRIPTOGRAFAR O ARQUIVO ORIGINAL DENTRO DA PASTA DO SERVIDOR
                             # abrindo o arquivo original que foi criptografado
                             with open(nome_arquivo, 'rb') as enc_file:
-                                encrypted = enc_file.read()
+                                original_encrypted = enc_file.read()
 
                             # descriptografando o arquivo original
-                            decrypted = fernet.decrypt(encrypted)
+                            decrypted = fernet.decrypt(original_encrypted)
 
                             # abrindo o arquivo no modo de gravação e gravando os dados descriptografados
                             with open(nome_arquivo, 'wb') as dec_file:

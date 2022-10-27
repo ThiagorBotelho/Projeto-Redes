@@ -93,7 +93,10 @@ while True:
 
     # Assinatura Digital
     (chavePub, chavePriv) = rsa.newkeys(512)
-    mClientSocket.send(str(chavePub).encode())
+    msgCriptografada = cryptocode.encrypt(str(chavePub), str(chave))
+    mClientSocket.send(msgCriptografada.encode())
+
+    # mClientSocket.send(str(chavePub).encode())
 
     mensagem1 = mensagem.encode()
     assinatura = rsa.sign(mensagem1, chavePriv, 'SHA-1')
@@ -160,12 +163,12 @@ while True:
         with open(mensagem, 'wb') as dec_file:
             dec_file.write(decrypted)
 
-        pergunta = int(input('Digite 1 para fazer outra requisição ou 0 para fechar: '))
+        pergunta = int(input('Digite 1 para fazer outra requisição ou 0 para encerrar a conexão: '))
         if pergunta == 0:
             break
 
     else:
-        pergunta = int(input('Digite 1 para tentar outra requisição ou 0 para fechar: '))
+        pergunta = int(input('Digite 1 para tentar outra requisição ou 0 para encerrar a conexão: '))
         if pergunta == 0:
             break
 
