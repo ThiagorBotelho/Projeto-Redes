@@ -71,7 +71,7 @@ while True:
 
     # Para o cliente digitar o seu nome:
     if nome_cliente == "vazio":
-        nome_cliente = input("\nDigite o nome do cliente 1 >> ")
+        nome_cliente = input("\nDigite o nome do cliente 4 >> ")
 
     # Mostrar os arquivos disponíveis ao cliente:
     print("\nArquivos Disponíveis no servidor:")
