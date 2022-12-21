@@ -7,11 +7,7 @@ Já o segundo projeto, chamado “Servidor Web”, solicita o desenvolvimento de
 
 A atividade foi lançada no dia 23/08/2022, com entrega marcada para dois meses depois, no dia 27/10/2022. Devido à pendências com outras matérias, o projeto só começou a ser desenvolvido um mês após a postagem do mesmo, de maneira que o grupo teve por volta de 6 semanas para completar todos os requisitos propostos. 
 
-Grupo composto por:
-Isabelle Queiroz 
-Rodrigo Leal
-Thiago Botelho
-Vinícius Marçal
+Grupo composto por Isabelle Queiroz, Rodrigo Leal, Thiago Botelho e Vinícius Marçal
 
 # Manual do usuário:
 	O primeiro passo para o usuário é baixar as bibliotecas utilizadas no projeto, para isso, basta inserir o seguinte trecho no terminal sem as aspas “pip install -r requirements.txt”. 
